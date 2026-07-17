@@ -1,68 +1,139 @@
-#' Bootstrap AUC Confidence Interval
+#' Bootstrap AUC Confidence Intervals
 #'
-#' Estimates the uncertainty of a model's area under the ROC curve (AUC)
+#' Estimates uncertainty in the area under the ROC curve (AUC)
 #' using bootstrap resampling.
 #'
+#' This function repeatedly resamples the dataset, refits the model,
+#' and estimates the sampling distribution of AUC. Confidence intervals
+#' can be calculated using different bootstrap approaches.
+#'
 #' @param model A fitted binary classification model.
-#' @param data The dataset used to fit the model.
+#' @param data Dataset used to fit the model.
 #' @param outcome Character string specifying the binary outcome variable.
 #' @param B Number of bootstrap repetitions.
+#' @param ci_method Confidence interval method. Options include
+#' "percentile", "basic", or "normal".
 #'
-#' @return A list containing the bootstrap AUC estimate,
-#' confidence interval, and bootstrap distribution.
+#' @return A list containing:
+#' \describe{
+#' \item{estimate}{Mean bootstrap AUC estimate}
+#' \item{confidence_interval}{Bootstrap confidence interval}
+#' \item{bootstrap_distribution}{Vector of bootstrap AUC values}
+#' }
+#'
+#' @details
+#' The bootstrap approximates the sampling distribution of AUC by
+#' repeatedly sampling from the empirical distribution of observations.
 #'
 #' @examples
-#' # Example:
-#' # fit <- glm(y ~ x1 + x2, data = df, family = binomial)
-#' # bootstrap_auc(fit, df, "y")
+#' fit <- glm(am ~ mpg + hp,
+#'            data = mtcars,
+#'            family = binomial)
+#'
+#' bootstrap_auc(
+#'   fit,
+#'   mtcars,
+#'   "am",
+#'   B = 100
+#' )
 #'
 #' @export
-bootstrap_auc <- function(model, data, outcome, B = 1000) {
+bootstrap_auc <- function(
+    model,
+    data,
+    outcome,
+    B = 1000,
+    ci_method = "percentile"
+) {
 
-  # Store bootstrap estimates
+  if (!ci_method %in% c("percentile", "basic", "normal")) {
+    stop(
+      "ci_method must be 'percentile', 'basic', or 'normal'"
+    )
+  }
+
+
   auc_values <- numeric(B)
 
-  # Bootstrap loop
+
   for (i in seq_len(B)) {
 
-    # Sample rows with replacement
-    boot_data <- data[sample(
-      seq_len(nrow(data)),
-      replace = TRUE
-    ), ]
+    boot_data <- data[
+      sample(
+        seq_len(nrow(data)),
+        replace = TRUE
+      ),
+    ]
 
-    # Refit model
+
     boot_model <- update(
       model,
       data = boot_data
     )
 
-    # Predicted probabilities
+
     predictions <- predict(
       boot_model,
       newdata = boot_data,
       type = "response"
     )
 
-    # Calculate AUC
-    roc_obj <- pROC::roc(
+
+    roc_object <- pROC::roc(
       boot_data[[outcome]],
       predictions,
       quiet = TRUE
     )
 
+
     auc_values[i] <- as.numeric(
-      pROC::auc(roc_obj)
+      pROC::auc(roc_object)
     )
+
   }
 
-  # Return results
-  list(
-    estimate = mean(auc_values),
-    confidence_interval = quantile(
-      auc_values,
-      probs = c(0.025, 0.975)
-    ),
-    bootstrap_distribution = auc_values
+
+  estimate <- mean(auc_values)
+
+
+  confidence_interval <- switch(
+    ci_method,
+
+    percentile =
+      quantile(
+        auc_values,
+        probs = c(0.025, 0.975)
+      ),
+
+    basic =
+      2 * estimate -
+      rev(
+        quantile(
+          auc_values,
+          probs = c(0.025, 0.975)
+        )
+      ),
+
+    normal =
+      estimate +
+      c(-1, 1) *
+      1.96 *
+      sd(auc_values)
+
   )
+
+
+  list(
+    estimate = estimate,
+
+    confidence_interval =
+      confidence_interval,
+
+    bootstrap_distribution =
+      auc_values,
+
+    ci_method =
+      ci_method
+  )
+
 }

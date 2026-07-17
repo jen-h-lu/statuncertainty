@@ -8,6 +8,14 @@
 \description{
 Provides tools for uncertainty quantification and evaluation of statistical learning models. The package implements bootstrap inference, model calibration assessment, confidence intervals for predictive performance metrics, and reproducible summaries for statistical workflows.
 }
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://github.com/jen-h-lu/statuncertainty}
+  \item Report bugs at \url{https://github.com/jen-h-lu/statuncertainty/issues}
+}
+
+}
 \author{
 \strong{Maintainer}: Jenna Lu \email{jennahlu3@gmail.com}
 

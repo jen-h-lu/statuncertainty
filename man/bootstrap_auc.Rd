@@ -2,30 +2,52 @@
 % Please edit documentation in R/bootstrap_auc.R
 \name{bootstrap_auc}
 \alias{bootstrap_auc}
-\title{Bootstrap AUC Confidence Interval}
+\title{Bootstrap AUC Confidence Intervals}
 \usage{
-bootstrap_auc(model, data, outcome, B = 1000)
+bootstrap_auc(model, data, outcome, B = 1000, ci_method = "percentile")
 }
 \arguments{
 \item{model}{A fitted binary classification model.}
 
-\item{data}{The dataset used to fit the model.}
+\item{data}{Dataset used to fit the model.}
 
 \item{outcome}{Character string specifying the binary outcome variable.}
 
 \item{B}{Number of bootstrap repetitions.}
+
+\item{ci_method}{Confidence interval method. Options include
+"percentile", "basic", or "normal".}
 }
 \value{
-A list containing the bootstrap AUC estimate,
-confidence interval, and bootstrap distribution.
+A list containing:
+\describe{
+\item{estimate}{Mean bootstrap AUC estimate}
+\item{confidence_interval}{Bootstrap confidence interval}
+\item{bootstrap_distribution}{Vector of bootstrap AUC values}
+}
 }
 \description{
-Estimates the uncertainty of a model's area under the ROC curve (AUC)
+Estimates uncertainty in the area under the ROC curve (AUC)
 using bootstrap resampling.
 }
+\details{
+This function repeatedly resamples the dataset, refits the model,
+and estimates the sampling distribution of AUC. Confidence intervals
+can be calculated using different bootstrap approaches.
+
+The bootstrap approximates the sampling distribution of AUC by
+repeatedly sampling from the empirical distribution of observations.
+}
 \examples{
-# Example:
-# fit <- glm(y ~ x1 + x2, data = df, family = binomial)
-# bootstrap_auc(fit, df, "y")
+fit <- glm(am ~ mpg + hp,
+           data = mtcars,
+           family = binomial)
+
+bootstrap_auc(
+  fit,
+  mtcars,
+  "am",
+  B = 100
+)
 
 }
